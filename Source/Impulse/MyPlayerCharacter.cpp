@@ -3,6 +3,8 @@
 
 #include "MyPlayerCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
 
 AMyPlayerCharacter::AMyPlayerCharacter()
 {
@@ -24,27 +26,36 @@ AMyPlayerCharacter::AMyPlayerCharacter()
 void AMyPlayerCharacter::BeginPlay()
 {
     Super::BeginPlay();
+
+    if (APlayerController* PC = Cast<APlayerController>(GetController()))
+    {
+        if (UEnhancedInputLocalPlayerSubsystem* Subsystem =
+            ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
+        {
+            Subsystem->AddMappingContext(DefaultMappingContext, 0);
+        }
+    }
 }
 
 void AMyPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
     Super::SetupPlayerInputComponent(PlayerInputComponent);
-    PlayerInputComponent->BindAxis("MoveForward", this, &AMyPlayerCharacter::MoveForward);
-    PlayerInputComponent->BindAxis("MoveRight", this, &AMyPlayerCharacter::MoveRight);
-    PlayerInputComponent->BindAction("Shoot", IE_Pressed, this, &AMyPlayerCharacter::Shoot);
+
+    if (UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(PlayerInputComponent))
+    {
+        EIC->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AMyPlayerCharacter::Move);
+        EIC->BindAction(ShootAction, ETriggerEvent::Triggered, this, &AMyPlayerCharacter::Shoot);
+    }
 }
 
-void AMyPlayerCharacter::MoveForward(float Value)
+void AMyPlayerCharacter::Move(const FInputActionValue& Value)
 {
-    AddMovementInput(FVector::ForwardVector, Value);
-}
-
-void AMyPlayerCharacter::MoveRight(float Value)
-{
-    AddMovementInput(FVector::RightVector, Value);
+    FVector2D MovementVector = Value.Get<FVector2D>();
+    AddMovementInput(FVector::ForwardVector, MovementVector.Y);
+    AddMovementInput(FVector::RightVector, MovementVector.X);
 }
 
 void AMyPlayerCharacter::Shoot()
 {
-    // Later
+    // Will be filled in when we create the Projectile class
 }

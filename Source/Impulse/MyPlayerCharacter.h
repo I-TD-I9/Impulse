@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
+#include "InputActionValue.h"
 #include "MyPlayerCharacter.generated.h"
 
 USTRUCT(BlueprintType)
@@ -32,6 +33,15 @@ public:
     UPROPERTY(VisibleAnywhere) UCameraComponent* Camera;
     UPROPERTY(EditAnywhere, BlueprintReadWrite) FPlayerStats Stats;
 
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Input")
+    class UInputMappingContext* DefaultMappingContext;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Input")
+    class UInputAction* MoveAction;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Input")
+    class UInputAction* ShootAction;
+
     UFUNCTION(BlueprintCallable) void Shoot();
 
 protected:
@@ -39,6 +49,5 @@ protected:
     virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
 private:
-    void MoveForward(float Value);
-    void MoveRight(float Value);
+    void Move(const FInputActionValue& Value);
 };
