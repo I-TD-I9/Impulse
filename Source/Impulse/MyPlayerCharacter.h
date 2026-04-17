@@ -7,6 +7,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "InputActionValue.h"
+#include "MyProjectile.h"
 #include "MyPlayerCharacter.generated.h"
 
 USTRUCT(BlueprintType)
@@ -41,10 +42,13 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Input")
     class UInputAction* ShootAction;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Combat")
+    TSubclassOf<class AMyProjectile> ProjectileClass;
 
     UFUNCTION(BlueprintCallable) void Shoot();
 
 protected:
+    virtual void Tick(float DeltaTime) override;
     virtual void BeginPlay() override;
     virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 

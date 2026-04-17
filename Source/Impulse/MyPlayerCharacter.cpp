@@ -27,8 +27,13 @@ void AMyPlayerCharacter::BeginPlay()
 {
     Super::BeginPlay();
 
-    if (APlayerController* PC = Cast<APlayerController>(GetController()))
+    // Show cursor
+    APlayerController* PC = Cast<APlayerController>(GetController());
+    if (PC)
     {
+        PC->bShowMouseCursor = true;
+        PC->bEnableClickEvents = true;
+
         if (UEnhancedInputLocalPlayerSubsystem* Subsystem =
             ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
         {
@@ -51,11 +56,56 @@ void AMyPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 void AMyPlayerCharacter::Move(const FInputActionValue& Value)
 {
     FVector2D MovementVector = Value.Get<FVector2D>();
-    AddMovementInput(FVector::ForwardVector, MovementVector.Y);
-    AddMovementInput(FVector::RightVector, MovementVector.X);
+
+    if (!Controller) { return; }
+
+    // Get the camera's yaw rotation only — ignore pitch and roll
+    const FRotator CameraRotation = FRotator(0.f, 
+        SpringArm->GetComponentRotation().Yaw, 0.f);
+    
+    const FVector ForwardDirection = FRotationMatrix(CameraRotation).GetUnitAxis(EAxis::X);
+    const FVector RightDirection = FRotationMatrix(CameraRotation).GetUnitAxis(EAxis::Y);
+
+    AddMovementInput(ForwardDirection, MovementVector.Y);
+    AddMovementInput(RightDirection, MovementVector.X);
+}
+
+void AMyPlayerCharacter::Tick(float DeltaTime)
+{
+    Super::Tick(DeltaTime);
+
+    APlayerController* PC = Cast<APlayerController>(GetController());
+    if (!PC) { return; }
+
+    FHitResult HitResult;
+    bool bHit = PC->GetHitResultUnderCursor(ECC_Visibility, false, HitResult);
+    if (!bHit) { return; }
+
+    FVector TargetLocation = HitResult.Location;
+    FVector StartLocation = GetActorLocation();
+    TargetLocation.Z = StartLocation.Z;
+
+    // Only rotate if cursor is at least 20 units away
+    if (FVector::Dist(TargetLocation, StartLocation) < 20.f) { return; }
+
+    FVector Direction = (TargetLocation - StartLocation).GetSafeNormal();
+    if (Direction.IsNearlyZero()) { return; }
+
+    float TargetYaw = FMath::Atan2(Direction.Y, Direction.X) * (180.f / PI);
+    SetActorRotation(FRotator(0.f, TargetYaw, 0.f));
 }
 
 void AMyPlayerCharacter::Shoot()
 {
-    // Will be filled in when we create the Projectile class
+    if (!ProjectileClass) { return; }
+
+    FVector SpawnLocation = GetActorLocation() + GetActorForwardVector() * 60.f;
+    FRotator SpawnRotation = GetActorRotation();
+
+    FActorSpawnParameters SpawnParams;
+    SpawnParams.Owner = this;
+    SpawnParams.Instigator = GetInstigator();
+
+    GetWorld()->SpawnActor<AMyProjectile>(ProjectileClass, SpawnLocation,
+        SpawnRotation, SpawnParams);
 }
