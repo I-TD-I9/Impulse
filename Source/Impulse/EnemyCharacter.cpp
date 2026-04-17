@@ -32,12 +32,10 @@ void AEnemyCharacter::Tick(float DeltaTime)
 
 	if (!PlayerCharacter) { return; }
 
-	// Move directly toward the player every frame
-	FVector Direction = (PlayerCharacter->GetActorLocation()
-		- GetActorLocation()).GetSafeNormal();
-	Direction.Z = 0.f;
+	AAIController* AIC = Cast<AAIController>(GetController());
+	if (!AIC) { return; }
 
-	AddMovementInput(Direction, 1.f);
+	AIC->MoveToActor(PlayerCharacter, 50.f);
 }
 
 void AEnemyCharacter::SetHealth(float NewMax)
