@@ -5,6 +5,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "MyProjectile.h"
 
 AMyPlayerCharacter::AMyPlayerCharacter()
 {
@@ -15,11 +16,18 @@ AMyPlayerCharacter::AMyPlayerCharacter()
     SpringArm->TargetArmLength = 900.f;
     SpringArm->SetRelativeRotation(FRotator(-60.f, 0.f, 0.f));
     SpringArm->bDoCollisionTest = false;
+    SpringArm->bUsePawnControlRotation = false;
+    SpringArm->bInheritPitch = false;
+    SpringArm->bInheritYaw = false;
+    SpringArm->bInheritRoll = false;
+    SpringArm->SetAbsolute(false, true, false);
 
     Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
     Camera->SetupAttachment(SpringArm);
+    Camera->bUsePawnControlRotation = false;
 
     GetCharacterMovement()->MaxWalkSpeed = Stats.MoveSpeed;
+    GetCharacterMovement()->bOrientRotationToMovement = false;
     bUseControllerRotationYaw = false;
 }
 
@@ -27,7 +35,6 @@ void AMyPlayerCharacter::BeginPlay()
 {
     Super::BeginPlay();
 
-    // Show cursor
     APlayerController* PC = Cast<APlayerController>(GetController());
     if (PC)
     {
@@ -53,23 +60,6 @@ void AMyPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
     }
 }
 
-void AMyPlayerCharacter::Move(const FInputActionValue& Value)
-{
-    FVector2D MovementVector = Value.Get<FVector2D>();
-
-    if (!Controller) { return; }
-
-    // Get the camera's yaw rotation only — ignore pitch and roll
-    const FRotator CameraRotation = FRotator(0.f, 
-        SpringArm->GetComponentRotation().Yaw, 0.f);
-    
-    const FVector ForwardDirection = FRotationMatrix(CameraRotation).GetUnitAxis(EAxis::X);
-    const FVector RightDirection = FRotationMatrix(CameraRotation).GetUnitAxis(EAxis::Y);
-
-    AddMovementInput(ForwardDirection, MovementVector.Y);
-    AddMovementInput(RightDirection, MovementVector.X);
-}
-
 void AMyPlayerCharacter::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
@@ -85,14 +75,33 @@ void AMyPlayerCharacter::Tick(float DeltaTime)
     FVector StartLocation = GetActorLocation();
     TargetLocation.Z = StartLocation.Z;
 
-    // Only rotate if cursor is at least 20 units away
     if (FVector::Dist(TargetLocation, StartLocation) < 20.f) { return; }
 
     FVector Direction = (TargetLocation - StartLocation).GetSafeNormal();
     if (Direction.IsNearlyZero()) { return; }
 
+    // Only rotate the actor yaw — camera is locked via SetAbsolute
     float TargetYaw = FMath::Atan2(Direction.Y, Direction.X) * (180.f / PI);
     SetActorRotation(FRotator(0.f, TargetYaw, 0.f));
+
+    // Keep the spring arm's world rotation locked to our fixed top-down angle
+    SpringArm->SetWorldRotation(FRotator(-60.f, 0.f, 0.f));
+}
+
+void AMyPlayerCharacter::Move(const FInputActionValue& Value)
+{
+    FVector2D MovementVector = Value.Get<FVector2D>();
+
+    if (!Controller) { return; }
+
+    const FRotator CameraRotation = FRotator(0.f,
+        SpringArm->GetComponentRotation().Yaw, 0.f);
+
+    const FVector ForwardDirection = FRotationMatrix(CameraRotation).GetUnitAxis(EAxis::X);
+    const FVector RightDirection = FRotationMatrix(CameraRotation).GetUnitAxis(EAxis::Y);
+
+    AddMovementInput(ForwardDirection, MovementVector.Y);
+    AddMovementInput(RightDirection, MovementVector.X);
 }
 
 void AMyPlayerCharacter::Shoot()
