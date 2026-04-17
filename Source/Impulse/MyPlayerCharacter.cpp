@@ -11,21 +11,6 @@ AMyPlayerCharacter::AMyPlayerCharacter()
 {
     PrimaryActorTick.bCanEverTick = true;
 
-    SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
-    SpringArm->SetupAttachment(RootComponent);
-    SpringArm->TargetArmLength = 900.f;
-    SpringArm->SetRelativeRotation(FRotator(-60.f, 0.f, 0.f));
-    SpringArm->bDoCollisionTest = false;
-    SpringArm->bUsePawnControlRotation = false;
-    SpringArm->bInheritPitch = false;
-    SpringArm->bInheritYaw = false;
-    SpringArm->bInheritRoll = false;
-    SpringArm->SetAbsolute(false, true, false);
-
-    Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
-    Camera->SetupAttachment(SpringArm);
-    Camera->bUsePawnControlRotation = false;
-
     GetCharacterMovement()->MaxWalkSpeed = Stats.MoveSpeed;
     GetCharacterMovement()->bOrientRotationToMovement = false;
     bUseControllerRotationYaw = false;
@@ -80,12 +65,8 @@ void AMyPlayerCharacter::Tick(float DeltaTime)
     FVector Direction = (TargetLocation - StartLocation).GetSafeNormal();
     if (Direction.IsNearlyZero()) { return; }
 
-    // Only rotate the actor yaw — camera is locked via SetAbsolute
     float TargetYaw = FMath::Atan2(Direction.Y, Direction.X) * (180.f / PI);
     SetActorRotation(FRotator(0.f, TargetYaw, 0.f));
-
-    // Keep the spring arm's world rotation locked to our fixed top-down angle
-    SpringArm->SetWorldRotation(FRotator(-60.f, 0.f, 0.f));
 }
 
 void AMyPlayerCharacter::Move(const FInputActionValue& Value)
@@ -94,14 +75,9 @@ void AMyPlayerCharacter::Move(const FInputActionValue& Value)
 
     if (!Controller) { return; }
 
-    const FRotator CameraRotation = FRotator(0.f,
-        SpringArm->GetComponentRotation().Yaw, 0.f);
-
-    const FVector ForwardDirection = FRotationMatrix(CameraRotation).GetUnitAxis(EAxis::X);
-    const FVector RightDirection = FRotationMatrix(CameraRotation).GetUnitAxis(EAxis::Y);
-
-    AddMovementInput(ForwardDirection, MovementVector.Y);
-    AddMovementInput(RightDirection, MovementVector.X);
+    // World-space movement — always W=forward, S=back, A=left, D=right
+    AddMovementInput(FVector(1.f, 0.f, 0.f), MovementVector.Y);
+    AddMovementInput(FVector(0.f, 1.f, 0.f), MovementVector.X);
 }
 
 void AMyPlayerCharacter::Shoot()

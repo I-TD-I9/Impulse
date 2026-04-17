@@ -4,8 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "GameFramework/SpringArmComponent.h"
-#include "Camera/CameraComponent.h"
 #include "InputActionValue.h"
 #include "MyProjectile.h"
 #include "MyPlayerCharacter.generated.h"
@@ -29,9 +27,7 @@ class IMPULSE_API AMyPlayerCharacter : public ACharacter
 
 public:
     AMyPlayerCharacter();
-
-    UPROPERTY(VisibleAnywhere) USpringArmComponent* SpringArm;
-    UPROPERTY(VisibleAnywhere) UCameraComponent* Camera;
+    
     UPROPERTY(EditAnywhere, BlueprintReadWrite) FPlayerStats Stats;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Input")
