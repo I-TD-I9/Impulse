@@ -26,13 +26,7 @@ public class Impulse : ModuleRules
 		PrivateDependencyModuleNames.AddRange(new string[] { });
 
 		PublicIncludePaths.AddRange(new string[] {
-			"Impulse",
-			"Impulse/Variant_Strategy",
-			"Impulse/Variant_Strategy/UI",
-			"Impulse/Variant_TwinStick",
-			"Impulse/Variant_TwinStick/AI",
-			"Impulse/Variant_TwinStick/Gameplay",
-			"Impulse/Variant_TwinStick/UI"
+			"Impulse"
 		});
 
 		// Uncomment if you are using Slate UI
